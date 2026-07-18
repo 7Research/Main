@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kinetics Fit — Research Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0f14;
+  --panel:#121821;
+  --panel-2:#161d28;
+  --line:#232c3a;
+  --amber:#ff9f1c;
+  --teal:#5eead4;
+  --text:#e7edf3;
+  --muted:#7f93a8;
+  --danger:#ff6b6b;
+  --radius:14px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  background:
+    radial-gradient(ellipse 900px 500px at 15% -10%, rgba(255,159,28,.08), transparent 60%),
+    radial-gradient(ellipse 900px 500px at 90% 0%, rgba(94,234,212,.07), transparent 60%),
+    var(--bg);
+  color:var(--text);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+}
+.wrap{max-width:1100px;margin:0 auto;padding:20px 20px 70px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 0 26px;border-bottom:1px solid var(--line);margin-bottom:28px}
+.brand{display:flex;align-items:center;gap:10px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--muted);letter-spacing:.04em}
+.brand a{color:var(--muted);text-decoration:none}
+.brand a:hover{color:var(--teal)}
+.led{width:7px;height:7px;border-radius:50%;background:var(--teal);box-shadow:0 0 8px var(--teal);flex-shrink:0}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-size:13px;font-family:'JetBrains Mono',monospace}
+.back:hover{color:var(--amber)}
+
+h1.title{font-family:'Space Grotesk',sans-serif;font-size:clamp(28px,4.5vw,42px);font-weight:700;margin:0 0 6px;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:15px;max-width:640px;line-height:1.6;margin:0 0 32px}
+
+.grid{display:grid;grid-template-columns:1fr;gap:20px}
+@media(min-width:900px){.grid{grid-template-columns:400px 1fr}}
+
+.panel{background:linear-gradient(180deg,var(--panel),var(--panel-2));border:1px solid var(--line);border-radius:var(--radius);padding:22px}
+.panel h2{font-family:'Space Grotesk',sans-serif;font-size:16px;margin:0 0 4px;font-weight:600}
+.panel .hint{color:var(--muted);font-size:12.5px;margin:0 0 16px;line-height:1.5}
+
+label{display:block;font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin:14px 0 6px;text-transform:uppercase;letter-spacing:.04em}
+textarea{
+  width:100%;min-height:150px;background:#0d1219;border:1px solid var(--line);border-radius:10px;
+  color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13.5px;padding:12px;resize:vertical;line-height:1.5;
+}
+textarea:focus,button:focus-visible,.tab:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+
+.rowbtns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+button{
+  border:0;border-radius:10px;padding:11px 16px;font-weight:600;font-size:13.5px;cursor:pointer;
+  font-family:'Inter',sans-serif;transition:transform .12s ease, filter .12s ease;
+}
+button:active{transform:scale(.97)}
+.btn-primary{background:var(--amber);color:#1a1305}
+.btn-primary:hover{filter:brightness(1.08)}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+.btn-ghost:hover{color:var(--text);border-color:var(--muted)}
+
+.err{color:var(--danger);font-size:12.5px;margin-top:10px;min-height:16px}
+
+.results-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.orders{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.order-card{
+  border:1px solid var(--line);border-radius:10px;padding:14px 12px;background:#0d1219;cursor:pointer;
+  transition:border-color .15s ease, background .15s ease;
+}
+.order-card:hover{border-color:var(--muted)}
+.order-card.active{border-color:var(--amber);background:#171008}
+.order-card.best::after{content:"BEST FIT";font-size:9px;letter-spacing:.08em;color:var(--amber);font-family:'JetBrains Mono',monospace;display:block;margin-top:6px}
+.order-card .oname{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:14px;margin-bottom:8px}
+.order-card .stat{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);margin-top:3px}
+.order-card .stat b{color:var(--text);font-weight:500}
+
+.chart-wrap{background:#0d1219;border:1px solid var(--line);border-radius:10px;padding:14px}
+svg{width:100%;height:auto;display:block}
+.axis-label{fill:var(--muted);font-family:'JetBrains Mono',monospace;font-size:10px}
+.grid-line{stroke:var(--line);stroke-width:1}
+.fit-line{stroke:var(--amber);stroke-width:2}
+.data-pt{fill:var(--teal);stroke:#0d1219;stroke-width:1.5}
+
+.empty{color:var(--muted);font-size:13.5px;text-align:center;padding:60px 20px;font-family:'JetBrains Mono',monospace}
+
+footer{text-align:center;color:var(--muted);font-size:12px;margin-top:50px;font-family:'JetBrains Mono',monospace}
+footer a{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand"><span class="led"></span> <a href="index.html">RESEARCH LAB</a> <span style="color:var(--line)">/</span> kinetics-fit</div>
+    <a class="back" href="index.html">&larr; all tools</a>
+  </div>
+
+  <h1 class="title">Kinetics Data Fit</h1>
+  <p class="sub">Paste time / concentration pairs from a reaction run. This linearizes your data against zero, first, and second‑order kinetics and tells you which order actually fits — with the rate constant for each.</p>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Experimental data</h2>
+      <p class="hint">One point per line: <b style="color:var(--text)">time,concentration</b> — any consistent units.</p>
+
+      <label for="data">Time, Concentration</label>
+      <textarea id="data">0,1.000
+10,0.779
+20,0.607
+30,0.472
+40,0.368
+50,0.286
+60,0.223</textarea>
+
+      <div class="rowbtns">
+        <button class="btn-primary" onclick="runFit()">Fit data</button>
+        <button class="btn-ghost" onclick="loadExample()">Load example</button>
+        <button class="btn-ghost" onclick="clearData()">Clear</button>
+      </div>
+      <div class="err" id="err"></div>
+    </div>
+
+    <div class="panel">
+      <div class="results-head">
+        <h2 style="margin:0">Fit results</h2>
+      </div>
+      <div id="output"><div class="empty">Enter data on the left and click "Fit data" to see results.</div></div>
+    </div>
+  </div>
+
+  <footer>Research Lab &bull; built by Dev Patra &amp; co. &bull; <a href="https://devpatra07.github.io/">devpatra07.github.io</a></footer>
+</div>
+
+<script>
+const ORDERS = [
+  {key:'0', name:'Zero order', ytitle:'[A]', transform:c=>c, unit:'conc/time', eq:'[A] = [A]₀ − kt'},
+  {key:'1', name:'First order', ytitle:'ln[A]', transform:c=>c>0?Math.log(c):null, unit:'1/time', eq:'ln[A] = ln[A]₀ − kt'},
+  {key:'2', name:'Second order', ytitle:'1/[A]', transform:c=>c!==0?1/c:null, unit:'1/(conc·time)', eq:'1/[A] = 1/[A]₀ + kt'},
+];
+
+let currentFits = null;
+let activeOrder = '0';
+
+function parseData(raw){
+  const pts = [];
+  const lines = raw.split('\n').map(l=>l.trim()).filter(Boolean);
+  for(const line of lines){
+    const parts = line.split(',').map(s=>s.trim()).filter(Boolean);
+    if(parts.length < 2) continue;
+    const t = parseFloat(parts[0]);
+    const c = parseFloat(parts[1]);
+    if(Number.isFinite(t) && Number.isFinite(c)) pts.push({t,c});
+  }
+  return pts.sort((a,b)=>a.t-b.t);
+}
+
+function linreg(xs, ys){
+  const n = xs.length;
+  if(n < 2) return null;
+  const mx = xs.reduce((a,b)=>a+b,0)/n;
+  const my = ys.reduce((a,b)=>a+b,0)/n;
+  let sxy=0, sxx=0, syy=0;
+  for(let i=0;i<n;i++){
+    sxy += (xs[i]-mx)*(ys[i]-my);
+    sxx += (xs[i]-mx)**2;
+    syy += (ys[i]-my)**2;
+  }
+  const slope = sxy/sxx;
+  const intercept = my - slope*mx;
+  const r2 = syy===0 ? 1 : (sxy*sxy)/(sxx*syy);
+  return {slope, intercept, r2};
+}
+
+function runFit(){
+  const err = document.getElementById('err');
+  err.textContent = '';
+  const pts = parseData(document.getElementById('data').value);
+  if(pts.length < 3){
+    err.textContent = 'Need at least 3 valid data points (time,concentration).';
+    document.getElementById('output').innerHTML = '<div class="empty">Waiting on valid data.</div>';
+    currentFits = null;
+    return;
+  }
+
+  const fits = ORDERS.map(o=>{
+    const xs = [], ys = [];
+    pts.forEach(p=>{
+      const y = o.transform(p.c);
+      if(y !== null && Number.isFinite(y)){ xs.push(p.t); ys.push(y); }
+    });
+    const reg = linreg(xs, ys);
+    return {...o, xs, ys, reg};
+  });
+
+  const valid = fits.filter(f=>f.reg);
+  if(valid.length === 0){
+    err.textContent = 'Could not fit any model — check for zero or negative concentrations.';
+    currentFits = null;
+    return;
+  }
+  const best = valid.reduce((a,b)=> (b.reg.r2 > a.reg.r2 ? b : a));
+  currentFits = {fits, bestKey: best.key, pts};
+  activeOrder = best.key;
+  renderResults();
+}
+
+function renderResults(){
+  if(!currentFits) return;
+  const {fits, bestKey} = currentFits;
+
+  let cardsHtml = '<div class="orders">';
+  fits.forEach(f=>{
+    const active = f.key === activeOrder ? 'active' : '';
+    const best = f.key === bestKey ? 'best' : '';
+    if(!f.reg){
+      cardsHtml += `<div class="order-card ${active}" onclick="selectOrder('${f.key}')">
+        <div class="oname">${f.name}</div>
+        <div class="stat">k <b>—</b></div>
+        <div class="stat">R² <b>—</b></div>
+      </div>`;
+      return;
+    }
+    const k = f.key === '0' ? -f.reg.slope : (f.key === '1' ? -f.reg.slope : f.reg.slope);
+    cardsHtml += `<div class="order-card ${active} ${best}" onclick="selectOrder('${f.key}')">
+      <div class="oname">${f.name}</div>
+      <div class="stat">k <b>${k.toPrecision(4)}</b></div>
+      <div class="stat">R² <b>${f.reg.r2.toFixed(4)}</b></div>
+    </div>`;
+  });
+  cardsHtml += '</div>';
+
+  const activeFit = fits.find(f=>f.key===activeOrder);
+  const chart = activeFit && activeFit.reg ? buildChart(activeFit) : '<div class="empty">No chart available for this order.</div>';
+
+  document.getElementById('output').innerHTML = cardsHtml + `
+    <p style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);margin:0 0 10px">
+      ${activeFit.eq} &nbsp;·&nbsp; k units: ${activeFit.unit}
+    </p>
+    <div class="chart-wrap">${chart}</div>
+  `;
+}
+
+function selectOrder(key){
+  activeOrder = key;
+  renderResults();
+}
+
+function buildChart(fit){
+  const W = 640, H = 320, pad = 44;
+  const xs = fit.xs, ys = fit.ys;
+  const xmin = Math.min(...xs), xmax = Math.max(...xs);
+  const ymin = Math.min(...ys), ymax = Math.max(...ys);
+  const xr = (xmax - xmin) || 1, yr = (ymax - ymin) || 1;
+  const padY = yr * 0.12, padX = xr * 0.06;
+
+  const sx = x => pad + ( (x - (xmin-padX)) / (xr + 2*padX) ) * (W - pad*2);
+  const sy = y => H - pad - ( (y - (ymin-padY)) / (yr + 2*padY) ) * (H - pad*2);
+
+  let dots = '';
+  xs.forEach((x,i)=>{
+    dots += `<circle class="data-pt" cx="${sx(x).toFixed(1)}" cy="${sy(ys[i]).toFixed(1)}" r="4"></circle>`;
+  });
+
+  const lx1 = xmin - padX, lx2 = xmax + padX;
+  const ly1 = fit.reg.slope*lx1 + fit.reg.intercept;
+  const ly2 = fit.reg.slope*lx2 + fit.reg.intercept;
+  const line = `<line class="fit-line" x1="${sx(lx1).toFixed(1)}" y1="${sy(ly1).toFixed(1)}" x2="${sx(lx2).toFixed(1)}" y2="${sy(ly2).toFixed(1)}"/>`;
+
+  let gridLines = '';
+  for(let i=0;i<=4;i++){
+    const gy = pad + i*(H-pad*2)/4;
+    gridLines += `<line class="grid-line" x1="${pad}" y1="${gy.toFixed(1)}" x2="${W-pad/1.4}" y2="${gy.toFixed(1)}"/>`;
+  }
+
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+    ${gridLines}
+    <line class="grid-line" x1="${pad}" y1="${pad}" x2="${pad}" y2="${H-pad}"/>
+    <line class="grid-line" x1="${pad}" y1="${H-pad}" x2="${W-pad/1.4}" y2="${H-pad}"/>
+    ${line}
+    ${dots}
+    <text class="axis-label" x="${pad}" y="18">${fit.ytitle}</text>
+    <text class="axis-label" x="${W-pad/1.4-20}" y="${H-14}">time</text>
+  </svg>`;
+}
+
+function loadExample(){
+  document.getElementById('data').value = `0,1.000
+10,0.779
+20,0.607
+30,0.472
+40,0.368
+50,0.286
+60,0.223`;
+  runFit();
+}
+
+function clearData(){
+  document.getElementById('data').value = '';
+  document.getElementById('output').innerHTML = '<div class="empty">Enter data on the left and click "Fit data" to see results.</div>';
+  document.getElementById('err').textContent = '';
+  currentFits = null;
+}
+
+runFit();
+</script>
+</body>
+</html>
